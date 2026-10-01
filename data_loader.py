@@ -4,7 +4,9 @@ import gdown
 import pandas as pd
 
 DATASET_ID = "1ngApLH7YljcLcSuWmQSlw8jnU22NfcJx"
-DATASET_FILE = Path("data") / "Oil_Pipeline_Accidents.csv"
+
+BASE_DIR = Path(__file__).resolve().parent
+DATASET_FILE = BASE_DIR / "data" / "Oil_Pipeline_Accidents.csv"
 
 
 def is_dataset_file(file: Path) -> bool:
@@ -25,9 +27,9 @@ def download_dataset() -> Path:
     print("Скачиваю датасет с Google Drive...")
     try:
         gdown.download(id=DATASET_ID, output=str(tmp))
-    except Exception:
+    except Exception as e:
         tmp.unlink(missing_ok=True)
-        raise SystemExit("Скачивание не удалось: проверьте интернет и запустите скрипт еще раз")
+        raise SystemExit(f"Скачивание не удалось ({e}). Проверьте интернет и запустите скрипт еще раз")
 
     if not is_dataset_file(tmp):
         tmp.unlink(missing_ok=True)
