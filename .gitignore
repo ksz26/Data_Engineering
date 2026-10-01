@@ -1,0 +1,14 @@
+# Виртуальное окружение
+.venv/
+venv/
+
+# Кэш Python
+__pycache__/
+*.pyc
+
+# Датасет — скачивается скриптом data_loader.py с Google Drive в папку data/,
+# в git не коммитим
+data/
+
+# Служебные файлы macOS
+.DS_Store
