@@ -61,6 +61,12 @@ CATEGORY_COLUMNS = [
 
 DATETIME_COLUMNS = ["Accident Date/Time", "Shutdown Date/Time", "Restart Date/Time"]
 
+DATETIME_FORMATS = {
+    "Accident Date/Time": "%m/%d/%Y %I:%M %p",
+    "Shutdown Date/Time": "%m/%d/%Y %H:%M",
+    "Restart Date/Time": "%m/%d/%Y %H:%M",
+}
+
 COUNT_COLUMNS = [
     "Public Evacuations",
     "Operator Employee Injuries",
@@ -82,16 +88,16 @@ def convert_column_types(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     for col in FLAG_COLUMNS:
-        df[col] = df[col].eq("YES") 
+        df[col] = df[col].eq("YES")
 
     for col in CATEGORY_COLUMNS:
         df[col] = df[col].astype("category")
 
-    for col in DATETIME_COLUMNS:
-        df[col] = pd.to_datetime(df[col], format="%m/%d/%Y %I:%M %p", errors="coerce")
+    for col, fmt in DATETIME_FORMATS.items():
+        df[col] = pd.to_datetime(df[col], format=fmt, errors="coerce")
 
     for col in COUNT_COLUMNS:
-        df[col] = df[col].astype("Int64")  
+        df[col] = df[col].astype("Int64")
 
     return df
 
@@ -115,5 +121,8 @@ if __name__ == "__main__":
     df = convert_column_types(df)
     print("\nТипы колонок после приведения:")
     print(df.dtypes.to_string())
+
+    print("\nНезаполненных значений в колонках с датами:")
+    print(df[DATETIME_COLUMNS].isna().sum().to_string())
 
     save_parquet(df)
