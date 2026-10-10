@@ -65,7 +65,7 @@ DATETIME_FORMATS = {
     "Restart Date/Time": "%m/%d/%Y %H:%M",
 }
 
-DATETIME_COLUMNS = list(DATETIME_FORMATS)  
+DATETIME_COLUMNS = list(DATETIME_FORMATS)
 
 COUNT_COLUMNS = [
     "Public Evacuations",
