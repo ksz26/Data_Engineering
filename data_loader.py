@@ -59,13 +59,13 @@ CATEGORY_COLUMNS = [
     "Cause Subcategory",
 ]
 
-DATETIME_COLUMNS = ["Accident Date/Time", "Shutdown Date/Time", "Restart Date/Time"]
-
 DATETIME_FORMATS = {
     "Accident Date/Time": "%m/%d/%Y %I:%M %p",
     "Shutdown Date/Time": "%m/%d/%Y %H:%M",
     "Restart Date/Time": "%m/%d/%Y %H:%M",
 }
+
+DATETIME_COLUMNS = list(DATETIME_FORMATS)  
 
 COUNT_COLUMNS = [
     "Public Evacuations",
