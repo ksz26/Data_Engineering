@@ -57,8 +57,8 @@ python scripts/scrap_site.py
 
 Выдача датасета (первые 20 строк):
 
-![Первые 20 строк датасета](dataset_head.png)
+![Первые 20 строк датасета](<img width="1280" height="765" alt="telegram-cloud-photo-size-2-5373330702838997468-y" src="https://github.com/user-attachments/assets/cc82995d-bcd3-4d8d-847f-bae0ccd75e46" />)
 
 Скачанные фото товаров (миниатюры из `data/images/`):
 
-![Миниатюры скачанных картинок](images_preview.jpg)
+![Миниатюры скачанных картинок](<img width="1280" height="465" alt="telegram-cloud-photo-size-2-5373330702838997482-y" src="https://github.com/user-attachments/assets/013f49fa-cd95-43c5-8680-283d9ac7fe29" />)
