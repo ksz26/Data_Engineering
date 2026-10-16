@@ -47,6 +47,68 @@ def load_dataset() -> pd.DataFrame:
     return pd.read_csv(download_dataset(), low_memory=False)
 
 
+FLAG_COLUMNS = ["Liquid Ignition", "Liquid Explosion", "Pipeline Shutdown"]
+
+CATEGORY_COLUMNS = [
+    "Pipeline Location",
+    "Pipeline Type",
+    "Liquid Type",
+    "Liquid Subtype",
+    "Liquid Name",
+    "Cause Category",
+    "Cause Subcategory",
+]
+
+DATETIME_FORMATS = {
+    "Accident Date/Time": "%m/%d/%Y %I:%M %p",
+    "Shutdown Date/Time": "%m/%d/%Y %H:%M",
+    "Restart Date/Time": "%m/%d/%Y %H:%M",
+}
+
+DATETIME_COLUMNS = list(DATETIME_FORMATS)
+
+COUNT_COLUMNS = [
+    "Public Evacuations",
+    "Operator Employee Injuries",
+    "Operator Contractor Injuries",
+    "Emergency Responder Injuries",
+    "Other Injuries",
+    "Public Injuries",
+    "All Injuries",
+    "Operator Employee Fatalities",
+    "Operator Contractor Fatalities",
+    "Emergency Responder Fatalities",
+    "Other Fatalities",
+    "Public Fatalities",
+    "All Fatalities",
+]
+
+
+def convert_column_types(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    for col in FLAG_COLUMNS:
+        df[col] = df[col].eq("YES")
+
+    for col in CATEGORY_COLUMNS:
+        df[col] = df[col].astype("category")
+
+    for col, fmt in DATETIME_FORMATS.items():
+        df[col] = pd.to_datetime(df[col], format=fmt, errors="coerce")
+
+    for col in COUNT_COLUMNS:
+        df[col] = df[col].astype("Int64")
+
+    return df
+
+
+def save_parquet(df: pd.DataFrame, path: Path = BASE_DIR / "data" / "Oil_Pipeline_Accidents.parquet") -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(path, index=False)
+    print(f"DataFrame сохранен в {path}")
+    return path
+
+
 if __name__ == "__main__":
     pd.set_option("display.max_columns", None)
 
@@ -55,3 +117,12 @@ if __name__ == "__main__":
     print(df.head(10))
     rows, cols = df.shape
     print(f"\nРазмер датасета: {rows} строк, {cols} столбцов")
+
+    df = convert_column_types(df)
+    print("\nТипы колонок после приведения:")
+    print(df.dtypes.to_string())
+
+    print("\nНезаполненных значений в колонках с датами:")
+    print(df[DATETIME_COLUMNS].isna().sum().to_string())
+
+    save_parquet(df)
