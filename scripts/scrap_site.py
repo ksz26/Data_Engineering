@@ -30,6 +30,7 @@ DATA_DIR = BASE_DIR / "data"
 OUT_FILE = DATA_DIR / "podrygka_cosmetics.csv"
 IMAGES_DIR = DATA_DIR / "images"
 
+
 def get_products(html: str) -> list[dict]:
     """Достаёт список товаров из JSON-LD блока (schema.org Product)."""
     soup = BeautifulSoup(html, "html.parser")
@@ -38,6 +39,8 @@ def get_products(html: str) -> list[dict]:
         return []
 
     data = json.loads(script.string)
+    if not isinstance(data, dict):
+        return []
     entity = data.get("mainEntity")
 
     if isinstance(entity, list):
@@ -65,6 +68,8 @@ def extract_row(product: dict) -> Optional[dict]:
     availability = str(offers.get("availability", ""))
     description = str(product.get("description", "")).replace("\n", " ").strip()
     images = product.get("image") or []
+    if isinstance(images, str):
+        images = [images]
 
     return {
         "sku": product.get("sku"),
@@ -79,6 +84,7 @@ def extract_row(product: dict) -> Optional[dict]:
         "image_url": images[0] if images else None,
         "url": product.get("url"),
     }
+
 
 def download_images(image_urls: pd.Series, names: pd.Series) -> pd.Series:
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
@@ -111,6 +117,7 @@ def download_images(image_urls: pd.Series, names: pd.Series) -> pd.Series:
     print(f"Скачано картинок: {len(image_files)} из {len(image_urls)} -> {IMAGES_DIR.relative_to(BASE_DIR)}/")
     return pd.Series(image_files, index=indexes, dtype="object")
 
+
 def convert_column_types(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
@@ -124,14 +131,19 @@ def convert_column_types(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
 def scrape() -> pd.DataFrame:
     all_rows: list[dict] = []
 
     with httpx.Client(headers=HEADERS, timeout=15.0, follow_redirects=True) as client:
         for page in range(1, MAX_PAGES + 1):
             url = URL + CATALOG_PATH + (f"?page={page}" if page > 1 else "")
-            response = client.get(url)
-            response.raise_for_status()
+            try:
+                response = client.get(url)
+                response.raise_for_status()
+            except httpx.HTTPError as e:
+                print(f"Страница {page}: ошибка запроса ({e}), сохраняем то, что успели собрать")
+                break
 
             products = get_products(response.text)
             if not products:
@@ -148,6 +160,10 @@ def scrape() -> pd.DataFrame:
             time.sleep(DELAY)
 
     df = pd.DataFrame(all_rows)
+    if df.empty:
+        print("Не удалось собрать ни одного товара, датасет не сохранён")
+        return df
+
     df = df.drop_duplicates(subset="sku").reset_index(drop=True)
     df = convert_column_types(df)
 
@@ -173,3 +189,4 @@ if __name__ == "__main__":
     print(df.dtypes.to_string())
     print("\nПервые 20 строк:")
     print(df.head(20))
+    
