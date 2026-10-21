@@ -45,8 +45,11 @@ https://www.podrygka.ru/catalog/
 
 ## Запуск
 
+Зависимости указаны в общем `requirements.txt` в корне репозитория. Устанавливаются из корня проекта:
+
 ```bash
 source .venv/bin/activate
+pip install -r requirements.txt
 python scripts/scrap_site.py
 ```
 
