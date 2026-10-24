@@ -12,3 +12,6 @@ data/
 
 # Служебные файлы macOS
 .DS_Store
+
+# Служебные файлы Jupyter
+.ipynb_checkpoints/
