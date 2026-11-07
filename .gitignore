@@ -15,3 +15,7 @@ data/
 
 # Служебные файлы Jupyter
 .ipynb_checkpoints/
+
+# Доступ к базе данных
+.env
+creds.db
