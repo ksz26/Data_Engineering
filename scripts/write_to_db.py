@@ -14,7 +14,10 @@ TABLE_NAME = "bulatovaks"
 
 def main():
     load_dotenv(BASE_DIR / ".env")
-    creds_file = Path(os.environ["CREDS_DB"]).expanduser().resolve()
+    creds_path = os.getenv("CREDS_DB")
+    if not creds_path:
+        raise SystemExit("Не найдена переменная CREDS_DB — создайте файл .env с путем к creds.db")
+    creds_file = Path(creds_path).expanduser().resolve()
     with closing(sqlite3.connect(f"{creds_file.as_uri()}?mode=ro", uri=True)) as connection:
         url, port, user, password, db_name = connection.execute(
             "SELECT url, port, user, pass, db_name FROM access WHERE db_name = ?",
