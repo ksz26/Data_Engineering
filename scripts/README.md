@@ -65,3 +65,14 @@ python scripts/scrap_site.py
 Скачанные фото товаров (миниатюры из `data/images/`):
 
 ![Миниатюры скачанных картинок](https://github.com/user-attachments/assets/013f49fa-cd95-43c5-8680-283d9ac7fe29)
+
+# ДЗ №7 — запись в базу данных
+
+Скрипт [`write_to_db.py`](write_to_db.py) читает данные для подключения из таблицы `access` в SQLite-файле и записывает первые 100 строк `Oil_Pipeline_Accidents.csv` в таблицу `bulatovaks` базы `homeworks`. После записи скрипт проверяет количество строк. Если таблица уже существует, скрипт остановится и не перезапишет ее.
+
+Запуск из корня проекта:
+
+```bash
+source .venv/bin/activate
+python scripts/write_to_db.py
+```
