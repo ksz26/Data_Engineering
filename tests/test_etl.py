@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from etl.creds import creds_from_env, creds_from_sqlite, save_to_env
+from etl.errors import CredsError, EtlError, LoadError
 from etl.load import select_rows
 from etl.main import parse_args, run
 from etl.transform import transform
@@ -78,8 +79,14 @@ def test_processed_validation_catches_cost_mismatch(raw_df):
 
 def test_select_rows_limit(raw_df):
     assert len(select_rows(raw_df, 2)) == 2
-    with pytest.raises(ValueError):
+    with pytest.raises(LoadError):
         select_rows(raw_df, 101)
+
+
+def test_all_etl_errors_share_base_class(tmp_path):
+    assert issubclass(ValidationError, EtlError)
+    with pytest.raises(CredsError):
+        creds_from_sqlite(tmp_path / "missing.db")
 
 
 def test_cli_rejects_more_than_100_rows():

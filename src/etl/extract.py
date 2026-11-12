@@ -9,6 +9,7 @@ import gdown
 import pandas as pd
 
 from etl.config import DATASET_ID, KEY_COLUMN
+from etl.errors import ExtractError
 
 logger = logging.getLogger(__name__)
 
@@ -28,18 +29,18 @@ def download_dataset(target: Path, dataset_id: str = DATASET_ID) -> Path:
         logger.info("Датасет уже скачан: %s", target)
         return target
 
-    target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_name(target.name + ".tmp")
     logger.info("Скачиваю датасет с Google Drive в %s", target)
     try:
+        target.parent.mkdir(parents=True, exist_ok=True)
         gdown.download(id=dataset_id, output=str(tmp), quiet=True)
     except Exception as e:
         tmp.unlink(missing_ok=True)
-        raise RuntimeError(f"Скачивание не удалось ({e}). Проверьте интернет и запустите еще раз") from e
+        raise ExtractError(f"Скачивание не удалось ({e}). Проверьте интернет и запустите еще раз") from e
 
     if not is_dataset_file(tmp):
         tmp.unlink(missing_ok=True)
-        raise RuntimeError(
+        raise ExtractError(
             "Скачанный файл не похож на CSV с датасетом — скорее всего, Google Drive "
             "исчерпал лимит скачиваний. Попробуйте позже или передайте файл через --source"
         )
@@ -55,11 +56,14 @@ def extract(raw_file: Path, source: Path | None = None) -> pd.DataFrame:
     """
     if source is not None:
         if not is_dataset_file(source):
-            raise RuntimeError(f"Файл {source} не найден или не похож на CSV с датасетом")
+            raise ExtractError(f"Файл {source} не найден или не похож на CSV с датасетом")
         path = source
     else:
         path = download_dataset(raw_file)
 
-    raw = pd.read_csv(path, low_memory=False)
+    try:
+        raw = pd.read_csv(path, low_memory=False)
+    except (OSError, ValueError) as e:  # ParserError и UnicodeDecodeError — подклассы ValueError
+        raise ExtractError(f"Не удалось прочитать {path}: {e}") from e
     logger.info("Прочитано %d строк и %d столбцов из %s", *raw.shape, path)
     return raw

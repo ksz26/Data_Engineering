@@ -174,6 +174,7 @@ Data_Engineering/
 │       ├── validate.py       # схемы Pandera для сырых и обработанных данных
 │       ├── load.py           # Parquet и запись до 100 строк в PostgreSQL
 │       ├── creds.py          # доступы к базе: SQLite-файл -> .env -> подключение
+│       ├── errors.py         # EtlError и исключения для каждого шага
 │       └── utils.py          # snake_case и проверка «точка в США»
 ├── tests/                    # pytest: проверки пакета etl
 ├── notebooks/

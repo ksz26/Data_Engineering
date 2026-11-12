@@ -6,6 +6,7 @@
     validate  — схемы Pandera для сырых и обработанных данных
     load      — Parquet и запись до 100 строк в PostgreSQL
     creds     — доступы к базе: SQLite-файл -> .env -> подключение
+    errors    — EtlError и его подклассы для каждого шага
     main      — CLI, запускает весь цикл
 """
 

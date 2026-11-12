@@ -14,6 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv, set_key
 
 from etl.config import DB_NAME, ENV_FILE, ENV_KEYS
+from etl.errors import CredsError
 
 logger = logging.getLogger(__name__)
 
@@ -21,22 +22,28 @@ logger = logging.getLogger(__name__)
 def creds_from_sqlite(creds_file: Path, db_name: str = DB_NAME) -> dict[str, str]:
     """Читает доступы к базе ``db_name`` из таблицы ``access`` SQLite-файла (только чтение)."""
     if not creds_file.is_file():
-        raise FileNotFoundError(f"Файл с доступами не найден: {creds_file}")
-    with closing(sqlite3.connect(f"{creds_file.resolve().as_uri()}?mode=ro", uri=True)) as connection:
-        row = connection.execute(
-            "SELECT url, port, user, pass, db_name FROM access WHERE db_name = ?",
-            (db_name,),
-        ).fetchone()
+        raise CredsError(f"Файл с доступами не найден: {creds_file}")
+    try:
+        with closing(sqlite3.connect(f"{creds_file.resolve().as_uri()}?mode=ro", uri=True)) as connection:
+            row = connection.execute(
+                "SELECT url, port, user, pass, db_name FROM access WHERE db_name = ?",
+                (db_name,),
+            ).fetchone()
+    except sqlite3.Error as e:
+        raise CredsError(f"Не удалось прочитать таблицу access из {creds_file}: {e}") from e
     if row is None:
-        raise LookupError(f"В таблице access нет записи для базы {db_name}")
+        raise CredsError(f"В таблице access нет записи для базы {db_name}")
     return dict(zip(ENV_KEYS, map(str, row)))
 
 
 def save_to_env(creds: dict[str, str], env_file: Path = ENV_FILE) -> None:
     """Записывает доступы в .env, не трогая остальные строки файла."""
-    env_file.touch(mode=0o600, exist_ok=True)
-    for key, value in creds.items():
-        set_key(env_file, key, value, quote_mode="always")
+    try:
+        env_file.touch(mode=0o600, exist_ok=True)
+        for key, value in creds.items():
+            set_key(env_file, key, value, quote_mode="always")
+    except OSError as e:
+        raise CredsError(f"Не удалось записать доступы в {env_file}: {e}") from e
     logger.info("Доступы к базе %s записаны в %s", creds["DB_NAME"], env_file)
 
 
@@ -46,7 +53,7 @@ def creds_from_env(env_file: Path = ENV_FILE) -> dict[str, str]:
     creds = {key: os.getenv(key, "") for key in ENV_KEYS}
     missing = [key for key, value in creds.items() if not value]
     if missing:
-        raise RuntimeError(
+        raise CredsError(
             f"В {env_file} не хватает переменных: {', '.join(missing)}. "
             "Запустите ETL с аргументом --creds-db /путь/к/creds.db"
         )

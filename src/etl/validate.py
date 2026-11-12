@@ -26,16 +26,13 @@ from etl.config import (
     VICTIM_COLUMNS,
     VOLUME_COLUMNS,
 )
+from etl.errors import ValidationError
 from etl.utils import to_snake_case
 
 logger = logging.getLogger(__name__)
 
 COST_TOLERANCE = 1  # доллар: суммы затрат в источнике целые
 VOLUME_TOLERANCE = 0.01  # баррель: объемы указаны с точностью до сотых
-
-
-class ValidationError(Exception):
-    """Данные не прошли проверку."""
 
 
 def _parses(fmt: str) -> pa.Check:

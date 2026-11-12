@@ -15,14 +15,13 @@ import re
 import sys
 from pathlib import Path
 
-from sqlalchemy.exc import SQLAlchemyError
-
 from etl.config import DATA_DIR, DEFAULT_TABLE, ENV_FILE, MAX_DB_ROWS, PROCESSED_FILE_NAME, RAW_FILE_NAME
 from etl.creds import creds_from_env, creds_from_sqlite, save_to_env
+from etl.errors import EtlError
 from etl.extract import extract
 from etl.load import IF_EXISTS_CHOICES, load_to_db, save_parquet, select_rows
 from etl.transform import transform
-from etl.validate import ValidationError, validate_processed, validate_raw
+from etl.validate import validate_processed, validate_raw
 
 logger = logging.getLogger("etl")
 
@@ -95,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     try:
         run(args)
-    except (ValidationError, RuntimeError, OSError, LookupError, ValueError, SQLAlchemyError) as e:
+    except EtlError as e:  # все ожидаемые ошибки пайплайна; остальное — баг, его покажет traceback
         if args.verbose:
             logger.exception("ETL остановлен")
         else:
