@@ -13,6 +13,8 @@ ENV_FILE = PROJECT_ROOT / ".env"
 
 # файл датасета на Google Drive
 DATASET_ID = "1ngApLH7YljcLcSuWmQSlw8jnU22NfcJx"
+# В исходном датасете данные за 2017 год представлены не полностью.
+INCOMPLETE_YEARS = frozenset({2017})
 
 # база и таблица для загрузки
 DB_NAME = "homeworks"

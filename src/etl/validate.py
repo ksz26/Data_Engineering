@@ -52,6 +52,7 @@ RAW_SCHEMA = pa.DataFrameSchema(
         **{col: pa.Column(str, _parses(fmt), nullable=(col != "Accident Date/Time"))
            for col, fmt in DATETIME_FORMATS.items()},
         **{col: pa.Column(str, pa.Check.isin(["YES", "NO"]), nullable=True) for col in FLAG_COLUMNS},
+        **{col: pa.Column(None, pa.Check.ge(0), nullable=True) for col in [*VOLUME_COLUMNS, *COST_COLUMNS]},
     },
     checks=pa.Check(lambda df: len(df) > 0, name="датасет не пустой"),
     name="сырой датасет",

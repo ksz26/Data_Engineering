@@ -72,7 +72,7 @@ def load_to_db(df: pd.DataFrame, table: str, creds: dict[str, str], if_exists: s
                 raise LoadError(f"В таблице {table} {count} строк, ожидалось {len(df)}")
     except SQLAlchemyError as e:
         # у ошибок драйвера (psycopg2) сообщение короче и понятнее, чем у обертки SQLAlchemy
-        raise LoadError(f"Ошибка базы данных: {str(getattr(e, 'orig', None) or e).strip()}") from e
+        raise LoadError(f"Ошибка работы с таблицей {table}: {str(getattr(e, 'orig', None) or e).strip()}") from e
     finally:
         engine.dispose()
 

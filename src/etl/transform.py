@@ -11,6 +11,7 @@ from etl.config import (
     COUNT_COLUMNS,
     DATETIME_FORMATS,
     FLAG_COLUMNS,
+    INCOMPLETE_YEARS,
     VICTIM_COLUMNS,
 )
 from etl.utils import in_usa, to_snake_case
@@ -89,10 +90,8 @@ def add_quality_flags(df: pd.DataFrame) -> pd.DataFrame:
     df["Is Outside USA"] = (has_geo & ~in_usa(lat, lon)).astype("boolean")
     df.loc[~has_geo, "Is Outside USA"] = pd.NA
 
-    # год неполный, если в нем меньше 12 месяцев с авариями (в датасете это 2017)
-    months_per_year = accident.dt.month.groupby(df["Accident Year"]).nunique()
-    incomplete_years = months_per_year[months_per_year < 12].index
-    df["Is Incomplete Year"] = df["Accident Year"].isin(incomplete_years)
+    # Полнота года известна из описания источника, а не из числа месяцев с авариями.
+    df["Is Incomplete Year"] = df["Accident Year"].isin(INCOMPLETE_YEARS)
 
     return df
 

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import sqlite3
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
+from sqlalchemy.exc import StatementError
 
+from etl.config import COST_COLUMNS, VOLUME_COLUMNS
 from etl.creds import creds_from_env, creds_from_sqlite, save_to_env
-from etl.errors import CredsError, EtlError, LoadError
-from etl.load import select_rows
+from etl.errors import CredsError, EtlError, ExtractError, LoadError
+from etl.load import load_to_db, select_rows
 from etl.main import parse_args, run
 from etl.transform import transform
 from etl.utils import to_snake_case
@@ -41,8 +44,15 @@ def test_transform_quality_flags(raw_df):
     assert df.loc[1, "is_shutdown_same_minute"]
     assert df.loc[1, "downtime_hours"] == 36
     assert df.loc[2, "is_zero_costs"]
-    assert df["is_incomplete_year"].tolist() == [True, True, True]  # в фикстуре нет полных лет
+    assert df["is_incomplete_year"].tolist() == [False, False, True]
     assert pd.isna(df.loc[2, "is_outside_usa"])
+
+
+def test_incomplete_year_does_not_depend_on_months_with_accidents(raw_df):
+    # В 2017 году есть запись для каждого месяца, но год по-прежнему неполный.
+    rows = pd.concat([raw_df.iloc[[2]]] * 12, ignore_index=True)
+    rows["Accident Date/Time"] = [f"{month}/2/2017 11:38 PM" for month in range(1, 13)]
+    assert transform(rows)["is_incomplete_year"].all()
 
 
 def test_longitude_sign_fixed(raw_df):
@@ -71,6 +81,18 @@ def test_raw_validation_missing_columns(raw_df):
         validate_raw(raw_df.drop(columns="All Costs"))
 
 
+@pytest.mark.parametrize("column", [*VOLUME_COLUMNS, *COST_COLUMNS])
+def test_raw_validation_rejects_negative_volume_and_cost(raw_df, column):
+    raw_df.loc[0, column] = -1
+    with pytest.raises(ValidationError, match=column.replace("(", r"\(").replace(")", r"\)")):
+        validate_raw(raw_df)
+
+
+def test_raw_validation_accepts_missing_volume_and_cost(raw_df):
+    raw_df[[*VOLUME_COLUMNS, *COST_COLUMNS]] = float("nan")
+    validate_raw(raw_df)
+
+
 def test_processed_validation_catches_cost_mismatch(raw_df):
     raw_df.loc[0, "All Costs"] = 999_999
     with pytest.raises(ValidationError, match="all_costs = сумма затрат"):
@@ -79,14 +101,33 @@ def test_processed_validation_catches_cost_mismatch(raw_df):
 
 def test_select_rows_limit(raw_df):
     assert len(select_rows(raw_df, 2)) == 2
+    many_rows = pd.concat([raw_df] * 40, ignore_index=True)
+    pd.testing.assert_frame_equal(select_rows(many_rows, 100), many_rows.iloc[:100])
     with pytest.raises(LoadError):
         select_rows(raw_df, 101)
 
 
-def test_all_etl_errors_share_base_class(tmp_path):
-    assert issubclass(ValidationError, EtlError)
+def test_all_etl_errors_share_base_class():
+    for error_class in (ExtractError, CredsError, ValidationError, LoadError):
+        assert issubclass(error_class, EtlError)
+
+
+def test_missing_credentials_raise_creds_error(tmp_path):
     with pytest.raises(CredsError):
         creds_from_sqlite(tmp_path / "missing.db")
+
+
+def test_database_error_mentions_table_and_preserves_cause(raw_df, monkeypatch):
+    original = ValueError("ошибка драйвера")
+    error = StatementError("ошибка SQLAlchemy", None, None, original)
+    engine = Mock()
+    engine.begin.side_effect = error
+    monkeypatch.setattr("etl.load.make_engine", lambda creds: engine)
+
+    with pytest.raises(LoadError, match="таблицей accidents: ошибка драйвера") as exc:
+        load_to_db(raw_df, "accidents", {})
+    assert exc.value.__cause__ is error
+    engine.dispose.assert_called_once()
 
 
 def test_cli_rejects_more_than_100_rows():
