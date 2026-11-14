@@ -45,11 +45,11 @@ https://www.podrygka.ru/catalog/
 
 ## Запуск
 
-Зависимости указаны в общем `requirements.txt` в корне репозитория. Устанавливаются из корня проекта:
+Зависимости для скрэпинга (`httpx`, `beautifulsoup4`) входят в dev-блок `pyproject.toml`. Устанавливаются из корня проекта:
 
 ```bash
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"
 python scripts/scrap_site.py
 ```
 
@@ -67,6 +67,8 @@ python scripts/scrap_site.py
 ![Миниатюры скачанных картинок](https://github.com/user-attachments/assets/013f49fa-cd95-43c5-8680-283d9ac7fe29)
 
 # ДЗ №7 — запись в базу данных
+
+В ДЗ №8 эта логика встроена в пакет [`etl`](../src/etl) (`creds.py` и `load.py`), скрипты оставлены как результат ДЗ №7.
 
 1. [`creds_to_env.py`](creds_to_env.py) читает данные для подключения из таблицы `access` в SQLite-файле и записывает их в `.env` в корне проекта.
 2. [`write_to_db.py`](write_to_db.py) читает доступы из `.env` и записывает первые 100 строк `Oil_Pipeline_Accidents.csv` в таблицу `bulatovaks` базы `homeworks`. После записи скрипт проверяет количество строк. Если таблица уже существует, скрипт остановится и не перезапишет ее.
